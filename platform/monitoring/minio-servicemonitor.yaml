@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: minio
+  namespace: minio
+  labels:
+    openshift.io/cluster-monitoring: "true"
+spec:
+  selector:
+    matchLabels:
+      app: minio
+      release: minio
+  endpoints:
+    - port: http
+      path: /minio/v2/metrics/cluster
+      interval: 30s
+  namespaceSelector:
+    matchNames:
+      - minio
