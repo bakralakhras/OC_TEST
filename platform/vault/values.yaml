@@ -1,0 +1,46 @@
+global:
+  openshift: true
+injector:
+  enabled: false
+server:
+  dev:
+    enabled: true
+    devRootToken: "root"
+  image:
+    repository: docker.io/hashicorp/vault
+    tag: "1.17.2"
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: null
+  readinessProbe:
+    enabled: true
+    path: "/v1/sys/health?standbyok=true&sealedcode=204&uninitcode=204"
+  livenessProbe:
+    enabled: true
+    path: "/v1/sys/health?standbyok=true"
+    initialDelaySeconds: 60
+  dataStorage:
+    enabled: false
+  auditStorage:
+    enabled: false
+  route:
+    enabled: true
+    host: vault.apps.ocp4.datahub.com
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+  service:
+    enabled: true
+    port: 8200
+    targetPort: 8200
+  ha:
+    enabled: false
+ui:
+  enabled: true
