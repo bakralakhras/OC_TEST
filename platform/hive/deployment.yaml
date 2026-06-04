@@ -14,43 +14,56 @@ spec:
         app: hive-metastore
     spec:
       initContainers:
-      - name: download-jars
-        image: curlimages/curl:latest
-        command:
-        - sh
-        - -c
-        - |
-          curl -o /jars/postgresql.jar https://jdbc.postgresql.org/download/postgresql-42.7.3.jar
-          curl -L -o /jars/hadoop-aws.jar https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.4/hadoop-aws-3.3.4.jar
-          curl -L -o /jars/aws-java-sdk-bundle.jar https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.367/aws-java-sdk-bundle-1.12.367.jar
-        volumeMounts:
-        - name: jars
-          mountPath: /jars
+        - name: download-jars
+          image: curlimages/curl:latest
+          command:
+            - sh
+            - -c
+            - |
+              curl -L https://jdbc.postgresql.org/download/postgresql-42.7.3.jar -o /aux-jars/postgresql-42.7.3.jar
+              curl -L https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.6/hadoop-aws-3.3.6.jar -o /aux-jars/hadoop-aws-3.3.6.jar
+              curl -L https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.262/aws-java-sdk-bundle-1.12.262.jar -o /aux-jars/aws-java-sdk-bundle-1.12.262.jar
+          volumeMounts:
+            - name: aux-jars
+              mountPath: /aux-jars
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
       containers:
-      - name: hive-metastore
-        image: apache/hive:standalone-metastore-4.1.0
-        env:
-        - name: SERVICE_NAME
-          value: metastore
-        - name: DB_DRIVER
-          value: postgres
-        - name: SERVICE_OPTS
-          value: >-
-            -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
-            -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://postgresql.postgresql.svc.cluster.local:5432/metastore
-            -Djavax.jdo.option.ConnectionUserName=hive
-            -Djavax.jdo.option.ConnectionPassword=hive123
-            -Dfs.s3a.access.key=admin
-            -Dfs.s3a.secret.key=minio1234
-            -Dfs.s3a.endpoint=http://minio.minio.svc.cluster.local:9000
-            -Dfs.s3a.path.style.access=true
-            -Dfs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
-            -Dfs.s3a.multipart.purge.age=86400
-        ports:
-        - containerPort: 9083
-        volumeMounts:
-        - name: jars
-          mountPath: /opt/hive-metastore/lib/jars
+        - name: hive-metastore
+          image: apache/hive:standalone-metastore-4.1.0
+          ports:
+            - containerPort: 9083
+          env:
+            - name: DB_DRIVER
+              value: postgres
+            - name: METASTORE_AUX_JARS_PATH
+              value: /aux-jars
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Xms512m -Xmx1536m"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 768Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+          volumeMounts:
+            - name: config
+              mountPath: /opt/hive/conf/metastore-site.xml
+              subPath: metastore-site.xml
+            - name: config
+              mountPath: /opt/hadoop/etc/hadoop/core-site.xml
+              subPath: core-site.xml
+            - name: aux-jars
+              mountPath: /aux-jars
       volumes:
-      - name: jars
-        emptyDir: {}
+        - name: config
+          configMap:
+            name: hive-metastore-config
+        - name: aux-jars
+          emptyDir: {}
