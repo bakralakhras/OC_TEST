@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: schema-registry-postgres
+  namespace: schema-registry
+type: Opaque
+stringData:
+  POSTGRESQL_USERNAME: schema_registry
+  POSTGRESQL_PASSWORD: schema_registry123
+  POSTGRESQL_DATABASE: schema_registry
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: schema-registry-postgres
+  namespace: schema-registry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: schema-registry-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: schema-registry-postgres
+    spec:
+      containers:
+        - name: postgresql
+          image: bitnami/postgresql:15
+          ports:
+            - name: postgresql
+              containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: schema-registry-postgres
+          env:
+            - name: POSTGRESQL_PORT_NUMBER
+              value: "5432"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /bitnami/postgresql
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -ec
+                - pg_isready -U "$POSTGRESQL_USERNAME" -d "$POSTGRESQL_DATABASE" -h 127.0.0.1 -p 5432
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: schema-registry-postgres
+  namespace: schema-registry
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: schema-registry-postgres
+  ports:
+    - name: postgresql
+      port: 5432
+      targetPort: postgresql
