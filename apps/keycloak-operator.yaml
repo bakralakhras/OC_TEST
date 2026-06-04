@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak-operator
+  namespace: openshift-gitops
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/bakralakhras/OC_TEST
+    targetRevision: main
+    path: platform/keycloak-operator
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: keycloak
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
