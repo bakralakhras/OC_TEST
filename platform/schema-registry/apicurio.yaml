@@ -30,12 +30,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: schema-registry-postgres
-                  key: POSTGRESQL_USERNAME
+                  key: POSTGRES_USER
             - name: APICURIO_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: schema-registry-postgres
-                  key: POSTGRESQL_PASSWORD
+                  key: POSTGRES_PASSWORD
           resources:
             requests:
               cpu: 100m

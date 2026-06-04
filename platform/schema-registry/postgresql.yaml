@@ -5,9 +5,9 @@ metadata:
   namespace: schema-registry
 type: Opaque
 stringData:
-  POSTGRESQL_USERNAME: schema_registry
-  POSTGRESQL_PASSWORD: schema_registry123
-  POSTGRESQL_DATABASE: schema_registry
+  POSTGRES_USER: schema_registry
+  POSTGRES_PASSWORD: schema_registry123
+  POSTGRES_DB: schema_registry
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -33,9 +33,6 @@ spec:
           envFrom:
             - secretRef:
                 name: schema-registry-postgres
-          env:
-            - name: POSTGRESQL_PORT_NUMBER
-              value: "5432"
           resources:
             requests:
               cpu: 100m
@@ -45,16 +42,7 @@ spec:
               memory: 512Mi
           volumeMounts:
             - name: data
-              mountPath: /bitnami/postgresql
-          readinessProbe:
-            exec:
-              command:
-                - /bin/bash
-                - -ec
-                - pg_isready -U "$POSTGRESQL_USERNAME" -d "$POSTGRESQL_DATABASE" -h 127.0.0.1 -p 5432
-            initialDelaySeconds: 20
-            periodSeconds: 10
-            timeoutSeconds: 5
+              mountPath: /var/lib/postgresql/data
       volumes:
         - name: data
           emptyDir: {}
